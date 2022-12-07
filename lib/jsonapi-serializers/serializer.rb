@@ -235,11 +235,22 @@ module JSONAPI
     end
 
     def self.find_serializer_class_name(object, options)
-      if options[:namespace]
-        "#{options[:namespace]}::#{object.class.name}Serializer"
-      else
-        "#{object.class.name}Serializer"
+      serializer_class_name =
+        object.class.ancestors.lazy.map do |klass|
+          if options[:namespace]
+            "#{options[:namespace]}::#{klass.name}Serializer"
+          else
+            "#{object.class.name}Serializer"
+          end
+        end.detect do |klass_name|
+          Object.const_defined?(klass_name)
+        end
+
+      if serializer_class_name.blank?
+        raise "Missing serializer for #{object.class.name} (namespace: #{options[:namespace]})"
       end
+
+      serializer_class_name
     end
 
     def self.find_serializer_class(object, options)
